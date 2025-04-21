@@ -1,5 +1,6 @@
 package com.example.calcprac_stateflow
 
+import android.widget.Toast
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -157,46 +158,65 @@ class CalculatorViewModel : ViewModel(){
             val currentState = _state.value
             val number1 = currentState.number1.toDoubleOrNull()
             val number2 = currentState.number2.toDoubleOrNull()
+            val operation = currentState.operation
 
-            if (number1 != null && number2 != null) {
-                val result = when (currentState.operation) {
-                    is CalculatorOperation.Add -> number1 + number2
-                    is CalculatorOperation.Subtract -> number1 - number2
-                    is CalculatorOperation.Multiply -> number1 * number2
-                    is CalculatorOperation.Divide -> number1 / number2
-                    null -> return@launch
-                    else -> {}
+            when {
+                // Case 1: Both numbers are present -> Perform the calculation
+                number1 != null && number2 != null && operation != null -> {
+                    val result = when (operation) {
+                        is CalculatorOperation.Add -> number1 + number2
+                        is CalculatorOperation.Subtract -> number1 - number2
+                        is CalculatorOperation.Multiply -> number1 * number2
+                        is CalculatorOperation.Divide -> number1 / number2
+                        else -> {}
+                    }
+
+                    _state.value = currentState.copy(
+                        result = result.toString().removeSuffix(".0"),
+                        number1 = "",
+                        number2 = "",
+                        operation = null
+                    )
                 }
 
-                _state.value = currentState.copy(
-                    result = result.toString().removeSuffix(".0"),
-                    number1 = "",
-                    number2 = "",
-                    operation = null
-                ) //else check for any = clicked without 2nd number
-            } else if (number2 == null) {
-                val result = number1
+                // Case 2: Only number1 is present -> Just show it
+                number1 != null && operation == null -> {
+                    _state.value = currentState.copy(
+                        result = number1.toString().removeSuffix(".0"),
+                        number1 = "",
+                        number2 = "",
+                        operation = null
+                    )
+                }
 
-                _state.value = currentState.copy(
-                    result = result?.toString()?.removeSuffix(".0") ?: "0",
-                    number1 = "",
-                    number2 = "",
-                    operation = null
-                )
-            }
+                // Case 3: No numbers, but existing result -> Just retain the result
+                currentState.result.isNotBlank() -> {
+                    _state.value = currentState.copy(
+                        result = currentState.result.removeSuffix(".0"),
+                        number1 = "",
+                        number2 = "",
+                        operation = null
+                    )
+                }
 
-            else {
-                _message.value = "Invalid input!"
+                // Case 4: Nothing entered at all -> Show 0 or empty
+                else -> {
+                    _state.value = currentState.copy(
+                        result = "0",
+                        number1 = "",
+                        number2 = "",
+                        operation = null
+                    )
+                }
             }
         }
     }
+
 
     companion object {
         private const val MAX_NUM_LENGTH = 8
     }
 }
-
-
 
 
 sealed class CalculatorAction {
