@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
+// contains all business logic
 
 class CalculatorViewModel : ViewModel(){
 
@@ -31,6 +32,59 @@ class CalculatorViewModel : ViewModel(){
             is CalculatorAction.Clear -> clear()
             is CalculatorAction.Delete -> delete()
             is CalculatorAction.Calculate -> calculate()
+            is CalculatorAction.Decimal -> addDecimalPoint()
+        }
+    }
+
+    private fun addDecimalPoint() {
+        viewModelScope.launch {
+            val currentState = _state.value
+
+            if (currentState.operation == null) {
+                // Handle decimal for first number
+                when {
+                    currentState.number1.isEmpty() -> {
+                        _state.value = currentState.copy(
+                            number1 = "0.",
+                            result = ""
+                        )
+                    }
+                    currentState.number1.contains(".") -> {
+                        _message.value = "Decimal already exists!"
+                    }
+                    currentState.number1.length >= MAX_NUM_LENGTH -> {
+                        _message.value = "Number is too long!"
+                    }
+                    else -> {
+                        _state.value = currentState.copy(
+                            number1 = currentState.number1 + ".",
+                            result = ""
+                        )
+                    }
+                }
+            } else {
+                // Handle decimal for second number
+                when {
+                    currentState.number2.isEmpty() -> {
+                        _state.value = currentState.copy(
+                            number2 = "0.",
+                            result = ""
+                        )
+                    }
+                    currentState.number2.contains(".") -> {
+                        _message.value = "Decimal already exists!"
+                    }
+                    currentState.number2.length >= MAX_NUM_LENGTH -> {
+                        _message.value = "Number is too long!"
+                    }
+                    else -> {
+                        _state.value = currentState.copy(
+                            number2 = currentState.number2 + ".",
+                            result = ""
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -119,8 +173,19 @@ class CalculatorViewModel : ViewModel(){
                     number1 = "",
                     number2 = "",
                     operation = null
+                ) //else check for any = clicked without 2nd number
+            } else if (number2 == null) {
+                val result = number1
+
+                _state.value = currentState.copy(
+                    result = result?.toString()?.removeSuffix(".0") ?: "0",
+                    number1 = "",
+                    number2 = "",
+                    operation = null
                 )
-            } else {
+            }
+
+            else {
                 _message.value = "Invalid input!"
             }
         }
@@ -134,17 +199,14 @@ class CalculatorViewModel : ViewModel(){
 
 
 
-
-
-
-
-
 sealed class CalculatorAction {
     data class Number(val number: Int) : CalculatorAction()
     data class Operation(val operation: CalculatorOperation) : CalculatorAction()
+
     object Clear : CalculatorAction()
     object Delete : CalculatorAction()
     object Calculate : CalculatorAction()
+    object Decimal : CalculatorAction()
 }
 
 // Helper class for one-time events with LiveData

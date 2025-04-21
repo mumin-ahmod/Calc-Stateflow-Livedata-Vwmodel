@@ -35,6 +35,9 @@ class MainActivity : AppCompatActivity() {
         binding.btn8.setOnClickListener { viewModel.onAction(CalculatorAction.Number(8)) }
         binding.btn9.setOnClickListener { viewModel.onAction(CalculatorAction.Number(9)) }
 
+        binding.btnDot.setOnClickListener { viewModel.onAction(CalculatorAction.Decimal) }
+
+
         // Operation buttons
         binding.btnAdd.setOnClickListener {
             viewModel.onAction(CalculatorAction.Operation(CalculatorOperation.Add))
